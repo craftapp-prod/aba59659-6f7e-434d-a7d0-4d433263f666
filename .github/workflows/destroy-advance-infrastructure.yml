@@ -1,0 +1,93 @@
+name: Destroy Advance Infrastructure
+
+on:
+  push:
+    branches: ['master']
+    paths:
+      - '.github/workflows/destroy-advance-infrastructure.yml'
+
+env:
+  AWS_DEFAULT_REGION: 'us-east-1'
+  PROJECT_ID: 7aa986c2-cac6-4470-9f52-237a9d34e5f0
+  WEBHOOK_SECRET: MHv7y4zE9pXG2wqAFU1cJRt3NZmLkoBd
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Get Parameters from SSM
+        id: get-parameters
+        run: |
+          S3_BUCKET=$(aws ssm get-parameter --name "/app/${PROJECT_ID}/s3-bucket" --query "Parameter.Value" --output text)
+          CF_ID=$(aws ssm get-parameter --name "/app/${PROJECT_ID}/cf-id" --query "Parameter.Value" --output text)
+          APPRUNNER_URL=$(aws ssm get-parameter --name "/app/${PROJECT_ID}/apprunner_url" --query "Parameter.Value" --output text)
+
+          echo "s3_bucket=$S3_BUCKET" >> $GITHUB_OUTPUT
+          echo "cf_id=$CF_ID" >> $GITHUB_OUTPUT
+          echo "apprunner_url=$APPRUNNER_URL" >> $GITHUB_OUTPUT
+
+      - name: Empty S3 Bucket
+        run: |
+          aws s3 rm s3://${{ steps.get-parameters.outputs.s3_bucket }} --recursive
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.get-parameters.outputs.cf_id }} \
+            --paths "/*"
+
+      - name: Terraform Destroy
+        run: |
+          terraform -chdir=terraform destroy \
+            -auto-approve \
+            -input=false
+        env:
+          TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Clean up SSM Parameters
+        run: |
+          aws ssm delete-parameter --name "/app/${PROJECT_ID}/s3-bucket" || true
+          aws ssm delete-parameter --name "/app/${PROJECT_ID}/cf-id" || true
+          aws ssm delete-parameter --name "/app/${PROJECT_ID}/cloudfront_url" || true
+          aws ssm delete-parameter --name "/app/${PROJECT_ID}/apprunner_url" || true
+
+      - name: Notify destruction succeeded
+        if: success()
+        run: |
+          curl -X POST https://api.project.craftapp.ai/api/deployment/webhook/advance/destroy/success \
+            -H "Content-Type: application/json" \
+            -H "x-webhook-secret: ${{ env.WEBHOOK_SECRET }}" \
+            -d "{
+              \"projectId\": \"${{ env.PROJECT_ID }}\",
+              \"message\": \"Infrastructure destruction completed successfully\"
+            }"
+
+      - name: Notify destruction failed
+        if: failure()
+        run: |
+          WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -X POST https://api.project.craftapp.ai/api/deployment/webhook/advance/destroy/failure \
+            -H "Content-Type: application/json" \
+            -H "x-webhook-secret: ${{ env.WEBHOOK_SECRET }}" \
+            -d "{
+              \"projectId\": \"${{ env.PROJECT_ID }}\",
+              \"workflowUrl\": \"${WORKFLOW_URL}\",
+              \"message\": \"Infrastructure destruction failed\"
+            }"
