@@ -1,12 +1,12 @@
-"use client";
+'use client';
 import { useState, useEffect } from 'react';
-import { Calculator, Backspace, Divide, Minus, Plus, X, Equal } from 'lucide-react';
 
 export default function CalculatorPage() {
   const [displayValue, setDisplayValue] = useState<string>('0');
   const [firstOperand, setFirstOperand] = useState<string | null>(null);
   const [operator, setOperator] = useState<string | null>(null);
-  const [waitingForSecondOperand, setWaitingForSecondOperand] = useState<boolean>(false);
+  const [waitingForSecondOperand, setWaitingForSecondOperand] =
+    useState<boolean>(false);
 
   const inputDigit = (digit: string) => {
     if (waitingForSecondOperand) {
@@ -91,14 +91,21 @@ export default function CalculatorPage() {
       inputDigit(event.key);
     } else if (event.key === '.') {
       inputDecimal();
-    } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
+    } else if (
+      event.key === '+' ||
+      event.key === '-' ||
+      event.key === '*' ||
+      event.key === '/'
+    ) {
       handleOperator(event.key);
     } else if (event.key === 'Enter' || event.key === '=') {
       calculateResult();
     } else if (event.key === 'Escape') {
       clearDisplay();
     } else if (event.key === 'Backspace') {
-      setDisplayValue(displayValue.length > 1 ? displayValue.slice(0, -1) : '0');
+      setDisplayValue(
+        displayValue.length > 1 ? displayValue.slice(0, -1) : '0',
+      );
     }
   };
 
@@ -113,21 +120,45 @@ export default function CalculatorPage() {
     { label: '7', value: '7', type: 'digit' },
     { label: '8', value: '8', type: 'digit' },
     { label: '9', value: '9', type: 'digit' },
-    { label: '/', value: '/', type: 'operator', icon: <Divide className="h-4 w-4" /> },
+    {
+      label: '/',
+      value: '/',
+      type: 'operator',
+    },
     { label: '4', value: '4', type: 'digit' },
     { label: '5', value: '5', type: 'digit' },
     { label: '6', value: '6', type: 'digit' },
-    { label: '*', value: '*', type: 'operator', icon: <X className="h-4 w-4" /> },
+    {
+      label: '*',
+      value: '*',
+      type: 'operator',
+    },
     { label: '1', value: '1', type: 'digit' },
     { label: '2', value: '2', type: 'digit' },
     { label: '3', value: '3', type: 'digit' },
-    { label: '-', value: '-', type: 'operator', icon: <Minus className="h-4 w-4" /> },
+    {
+      label: '-',
+      value: '-',
+      type: 'operator',
+    },
     { label: '0', value: '0', type: 'digit', colSpan: 2 },
     { label: '.', value: '.', type: 'decimal' },
-    { label: '+', value: '+', type: 'operator', icon: <Plus className="h-4 w-4" /> },
-    { label: '=', value: '=', type: 'equals', icon: <Equal className="h-4 w-4" /> },
+    {
+      label: '+',
+      value: '+',
+      type: 'operator',
+    },
+    {
+      label: '=',
+      value: '=',
+      type: 'equals',
+    },
     { label: 'C', value: 'C', type: 'clear' },
-    { label: '⌫', value: '⌫', type: 'backspace', icon: <Backspace className="h-4 w-4" /> },
+    {
+      label: '⌫',
+      value: '⌫',
+      type: 'backspace',
+    },
   ];
 
   return (
@@ -135,9 +166,10 @@ export default function CalculatorPage() {
       <div className="flex flex-col space-y-6">
         <div className="flex flex-col items-center space-y-2 text-center">
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 mb-4">
-            <Calculator className="h-8 w-8 text-primary-600" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl">MiniCalc</h1>
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl">
+            MiniCalc
+          </h1>
           <p className="max-w-[700px] text-gray-500 md:text-xl">
             Simple and efficient calculator for everyday use
           </p>
@@ -180,12 +212,15 @@ export default function CalculatorPage() {
                       clearDisplay();
                       break;
                     case 'backspace':
-                      setDisplayValue(displayValue.length > 1 ? displayValue.slice(0, -1) : '0');
+                      setDisplayValue(
+                        displayValue.length > 1
+                          ? displayValue.slice(0, -1)
+                          : '0',
+                      );
                       break;
                   }
                 }}
               >
-                {button.icon ? button.icon : button.label}
               </button>
             ))}
           </div>

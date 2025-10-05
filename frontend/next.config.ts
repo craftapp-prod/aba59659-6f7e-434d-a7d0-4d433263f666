@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  basePath: '/customer/aba59659-6f7e-434d-a7d0-4d433263f666',
+  assetPrefix: '/customer/aba59659-6f7e-434d-a7d0-4d433263f666',
+  reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
