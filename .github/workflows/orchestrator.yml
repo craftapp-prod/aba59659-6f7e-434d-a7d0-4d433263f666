@@ -1,0 +1,26 @@
+name: Orchestrator Workflow for Testing and Deployment
+
+on:
+  push:
+    branches: [medium]
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+jobs:
+  run-tests:
+    name: Call Test workflow
+    uses: ./.github/workflows/ci-build-test.yml
+    with:
+      ref: ${{ github.sha }}
+
+  deploy:
+    name: Call Deploy workflow
+    needs: run-tests
+    if: ${{ needs.run-tests.result == 'success' }}
+    uses: ./.github/workflows/deploy-infrastructure-and-application.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets: inherit
