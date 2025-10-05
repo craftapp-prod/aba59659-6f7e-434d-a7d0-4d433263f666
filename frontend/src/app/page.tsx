@@ -1,96 +1,201 @@
-import Link from "next/link";
-import { Shield, User, Lock } from "lucide-react";
+"use client";
+import { useState, useEffect } from 'react';
+import { Calculator, Backspace, Divide, Minus, Plus, X, Equal } from 'lucide-react';
 
-export default function Home() {
+export default function CalculatorPage() {
+  const [displayValue, setDisplayValue] = useState<string>('0');
+  const [firstOperand, setFirstOperand] = useState<string | null>(null);
+  const [operator, setOperator] = useState<string | null>(null);
+  const [waitingForSecondOperand, setWaitingForSecondOperand] = useState<boolean>(false);
+
+  const inputDigit = (digit: string) => {
+    if (waitingForSecondOperand) {
+      setDisplayValue(digit);
+      setWaitingForSecondOperand(false);
+    } else {
+      setDisplayValue(displayValue === '0' ? digit : displayValue + digit);
+    }
+  };
+
+  const inputDecimal = () => {
+    if (waitingForSecondOperand) {
+      setDisplayValue('0.');
+      setWaitingForSecondOperand(false);
+      return;
+    }
+
+    if (!displayValue.includes('.')) {
+      setDisplayValue(displayValue + '.');
+    }
+  };
+
+  const clearDisplay = () => {
+    setDisplayValue('0');
+    setFirstOperand(null);
+    setOperator(null);
+    setWaitingForSecondOperand(false);
+  };
+
+  const handleOperator = (nextOperator: string) => {
+    const inputValue = parseFloat(displayValue);
+
+    if (firstOperand === null) {
+      setFirstOperand(displayValue);
+    } else if (operator) {
+      const result = performCalculation();
+      setDisplayValue(String(result));
+      setFirstOperand(String(result));
+    }
+
+    setWaitingForSecondOperand(true);
+    setOperator(nextOperator);
+  };
+
+  const performCalculation = (): number => {
+    const first = parseFloat(firstOperand || '0');
+    const second = parseFloat(displayValue);
+    let result = 0;
+
+    switch (operator) {
+      case '+':
+        result = first + second;
+        break;
+      case '-':
+        result = first - second;
+        break;
+      case '*':
+        result = first * second;
+        break;
+      case '/':
+        result = first / second;
+        break;
+      default:
+        result = second;
+    }
+
+    return result;
+  };
+
+  const calculateResult = () => {
+    if (firstOperand && operator && !waitingForSecondOperand) {
+      const result = performCalculation();
+      setDisplayValue(String(result));
+      setFirstOperand(null);
+      setOperator(null);
+      setWaitingForSecondOperand(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (/^[0-9]$/.test(event.key)) {
+      inputDigit(event.key);
+    } else if (event.key === '.') {
+      inputDecimal();
+    } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/') {
+      handleOperator(event.key);
+    } else if (event.key === 'Enter' || event.key === '=') {
+      calculateResult();
+    } else if (event.key === 'Escape') {
+      clearDisplay();
+    } else if (event.key === 'Backspace') {
+      setDisplayValue(displayValue.length > 1 ? displayValue.slice(0, -1) : '0');
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [displayValue, firstOperand, operator, waitingForSecondOperand]);
+
+  const buttons = [
+    { label: '7', value: '7', type: 'digit' },
+    { label: '8', value: '8', type: 'digit' },
+    { label: '9', value: '9', type: 'digit' },
+    { label: '/', value: '/', type: 'operator', icon: <Divide className="h-4 w-4" /> },
+    { label: '4', value: '4', type: 'digit' },
+    { label: '5', value: '5', type: 'digit' },
+    { label: '6', value: '6', type: 'digit' },
+    { label: '*', value: '*', type: 'operator', icon: <X className="h-4 w-4" /> },
+    { label: '1', value: '1', type: 'digit' },
+    { label: '2', value: '2', type: 'digit' },
+    { label: '3', value: '3', type: 'digit' },
+    { label: '-', value: '-', type: 'operator', icon: <Minus className="h-4 w-4" /> },
+    { label: '0', value: '0', type: 'digit', colSpan: 2 },
+    { label: '.', value: '.', type: 'decimal' },
+    { label: '+', value: '+', type: 'operator', icon: <Plus className="h-4 w-4" /> },
+    { label: '=', value: '=', type: 'equals', icon: <Equal className="h-4 w-4" /> },
+    { label: 'C', value: 'C', type: 'clear' },
+    { label: '⌫', value: '⌫', type: 'backspace', icon: <Backspace className="h-4 w-4" /> },
+  ];
+
   return (
-    <div className="flex flex-col items-center">
-      <section className="w-full py-12 md:py-24 text-center">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
-                Craftapp.ai
-              </h1>
-              <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
-                Welcome to craftapp
-              </p>
-            </div>
-            <div className="space-x-4">
-              <Link
-                href="#"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-primary-600 px-8 text-sm font-medium text-white shadow transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500"
-              >
-                Get Started
-              </Link>
-            </div>
+    <div className="w-full max-w-md mx-auto">
+      <div className="flex flex-col space-y-6">
+        <div className="flex flex-col items-center space-y-2 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 mb-4">
+            <Calculator className="h-8 w-8 text-primary-600" />
           </div>
+          <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl">MiniCalc</h1>
+          <p className="max-w-[700px] text-gray-500 md:text-xl">
+            Simple and efficient calculator for everyday use
+          </p>
         </div>
-      </section>
 
-      <section className="w-full py-12 md:py-24 bg-gray-100">
-        <div className="container px-4 md:px-6">
-          <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-              Key Features
-            </h2>
-            <p className="max-w-[85%] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Modern full-stack web application, single page application, real
-              time game....
-            </p>
-          </div>
-          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-3">
-            <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
-              <div className="p-3 rounded-full bg-primary-100">
-                <User className="h-6 w-6 text-primary-600" />
-              </div>
-              <h3 className="text-xl font-bold">Full-Stack web app</h3>
-              <p className="text-sm text-gray-500 text-center">
-                Complete user registration, authentication, and profile
-                management...
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
-              <div className="p-3 rounded-full bg-primary-100">
-                <Lock className="h-6 w-6 text-primary-600" />
-              </div>
-              <h3 className="text-xl font-bold">Single Page app</h3>
-              <p className="text-sm text-gray-500 text-center">
-                amazing single page apps.
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
-              <div className="p-3 rounded-full bg-primary-100">
-                <Shield className="h-6 w-6 text-primary-600" />
-              </div>
-              <h3 className="text-xl font-bold">Real time apps</h3>
-              <p className="text-sm text-gray-500 text-center">
-                Amazing real time app like game, stop watch ....
-              </p>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="h-20 flex items-center justify-end mb-6 px-4 rounded-lg bg-gray-100 overflow-hidden">
+            <div className="text-4xl font-medium text-gray-800 truncate">
+              {displayValue}
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="w-full py-12 md:py-24">
-        <div className="container px-4 md:px-6">
-          <div className="mx-auto max-w-[58rem] flex flex-col items-center justify-center space-y-4 text-center">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-              Ready to get started?
-            </h2>
-            <p className="max-w-[85%] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Create your own app now
-            </p>
-            <div className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Link
-                href="#"
-                className="inline-flex h-10 items-center justify-center rounded-md bg-primary-600 px-8 text-sm font-medium text-white shadow transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500"
+          <div className="grid grid-cols-4 gap-3">
+            {buttons.map((button, index) => (
+              <button
+                key={index}
+                className={`flex items-center justify-center p-4 rounded-lg text-xl font-medium transition-colors
+                  ${button.type === 'digit' ? 'bg-gray-100 hover:bg-gray-200' : ''}
+                  ${button.type === 'operator' ? 'bg-primary-100 hover:bg-primary-200 text-primary-600' : ''}
+                  ${button.type === 'equals' ? 'bg-primary-500 hover:bg-primary-600 text-white' : ''}
+                  ${button.type === 'clear' ? 'bg-red-100 hover:bg-red-200 text-red-600' : ''}
+                  ${button.type === 'backspace' ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-600' : ''}
+                  ${button.colSpan ? 'col-span-2' : ''}
+                `}
+                onClick={() => {
+                  switch (button.type) {
+                    case 'digit':
+                      inputDigit(button.value);
+                      break;
+                    case 'decimal':
+                      inputDecimal();
+                      break;
+                    case 'operator':
+                      handleOperator(button.value);
+                      break;
+                    case 'equals':
+                      calculateResult();
+                      break;
+                    case 'clear':
+                      clearDisplay();
+                      break;
+                    case 'backspace':
+                      setDisplayValue(displayValue.length > 1 ? displayValue.slice(0, -1) : '0');
+                      break;
+                  }
+                }}
               >
-                Start Now ...
-              </Link>
-            </div>
+                {button.icon ? button.icon : button.label}
+              </button>
+            ))}
           </div>
         </div>
-      </section>
+
+        <div className="text-center text-sm text-gray-500 mt-6">
+          <p>Use your keyboard for faster input</p>
+          <p className="mt-1">Press Esc to clear, Enter to calculate</p>
+        </div>
+      </div>
     </div>
   );
 }
